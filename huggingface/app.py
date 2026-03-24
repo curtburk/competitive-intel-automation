@@ -53,6 +53,36 @@ COMPETITORS = {
             "title": ["h1", "h1.page-title"],
             "availability": ["div.availability", "a.buy-now"]
         }
+    },
+    "msi": {
+        "name": "MSI XpertStation WS300",
+        "url": "https://www.msi.com/Landing/NVIDIA-DGX-STATION",
+        "selectors": {
+            "price": ["span.price", "div.product-price"],
+            "specs": ["div.spec-content", "div.specifications", "section.specs"],
+            "title": ["h1", "h1.product-title"],
+            "availability": ["div.availability", "span.stock", "a.order-now"]
+        }
+    },
+    "supermicro": {
+        "name": "Supermicro Super AI Station",
+        "url": "https://www.supermicro.com/en/accelerators/nvidia/super-ai-station",
+        "selectors": {
+            "price": ["span.price", "div.product-price"],
+            "specs": ["div.spec-content", "div.specifications", "table.specs"],
+            "title": ["h1", "h1.page-title"],
+            "availability": ["div.availability", "span.stock"]
+        }
+    },
+    "gigabyte": {
+        "name": "Gigabyte W775-V10-L01",
+        "url": "https://www.gigabyte.com/Enterprise/Tower-Server/W775-V10-L01",
+        "selectors": {
+            "price": ["span.price", "div.product-price"],
+            "specs": ["div.spec-content", "div.specifications", "section.specs"],
+            "title": ["h1", "h1.product-name"],
+            "availability": ["div.availability", "span.stock"]
+        }
     }
 }
 
