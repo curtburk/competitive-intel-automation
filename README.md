@@ -70,7 +70,7 @@ These competitors block automated scraping (403 Forbidden). They would require a
 | Backend API | HuggingFace Spaces | https://curtburk-competitive-intel-monitor.hf.space |
 | Daily scheduler | GitHub Actions | This repo → Actions tab |
 | Email alerts | Resend | Configured via environment variables |
-| Frontend (optional) | Lovable | Not yet built — use LOVABLE_PROMPT.md |
+| Frontend (optional) | Lovable | hp-intel-hub.lovable.app |
 
 ---
 
