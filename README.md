@@ -51,6 +51,16 @@ competitive-intel-automation/
 
 All three compete with **HP ZGX Fury**.
 
+### Not Currently Monitored (Bot Protection)
+
+These competitors block automated scraping (403 Forbidden). They would require a paid proxy service or headless browser with more resources to monitor:
+
+| Competitor | Product | Why Blocked |
+|------------|---------|-------------|
+| MSI | XpertStation WS300 / CT60-S8060 | Site-wide Cloudflare protection |
+| Supermicro | Super AI Station | Site-wide bot detection |
+| Gigabyte | W775-V10-L01 | Site-wide bot detection |
+
 ---
 
 ## Where Things Are Running
