@@ -53,38 +53,14 @@ COMPETITORS = {
             "title": ["h1", "h1.page-title"],
             "availability": ["div.availability", "a.buy-now"]
         }
-    },
-    "msi": {
-        "name": "MSI XpertStation WS300",
-        "url": "https://www.msi.com/Landing/NVIDIA-DGX-STATION",
-        "selectors": {
-            "price": ["span.price", "div.product-price"],
-            "specs": ["div.spec-content", "div.specifications", "section.specs"],
-            "title": ["h1", "h1.product-title"],
-            "availability": ["div.availability", "span.stock", "a.order-now"]
-        }
-    },
-    "supermicro": {
-        "name": "Supermicro Super AI Station",
-        "url": "https://www.supermicro.com/en/accelerators/nvidia/super-ai-station",
-        "selectors": {
-            "price": ["span.price", "div.product-price"],
-            "specs": ["div.spec-content", "div.specifications", "table.specs"],
-            "title": ["h1", "h1.page-title"],
-            "availability": ["div.availability", "span.stock"]
-        }
-    },
-    "gigabyte": {
-        "name": "Gigabyte W775-V10-L01",
-        "url": "https://www.gigabyte.com/Enterprise/Tower-Server/W775-V10-L01",
-        "selectors": {
-            "price": ["span.price", "div.product-price"],
-            "specs": ["div.spec-content", "div.specifications", "section.specs"],
-            "title": ["h1", "h1.product-name"],
-            "availability": ["div.availability", "span.stock"]
-        }
     }
 }
+
+# MSI, Supermicro, and Gigabyte block automated requests (403 Forbidden).
+# To monitor these, you would need:
+# 1. A paid proxy service, OR
+# 2. Playwright with a paid HuggingFace tier (more memory), OR  
+# 3. Manual monitoring
 
 # Storage paths (HuggingFace Spaces persistent storage)
 DATA_DIR = os.environ.get("DATA_DIR", "./data")
@@ -153,16 +129,28 @@ class CompetitorStatus(BaseModel):
 # HELPER FUNCTIONS
 # ============================================================================
 
-def get_page_content(url: str) -> tuple[str, str]:
+def get_page_content(url: str, competitor_id: str = None) -> tuple[str, str]:
     """Fetch page content and return (html, text)."""
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
+        "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
     }
     
     try:
-        response = requests.get(url, headers=headers, timeout=30)
+        response = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
         response.raise_for_status()
         html = response.text
         
@@ -173,7 +161,6 @@ def get_page_content(url: str) -> tuple[str, str]:
             element.decompose()
         
         text = soup.get_text(separator="\n", strip=True)
-        # Clean up whitespace
         text = re.sub(r'\n\s*\n', '\n\n', text)
         
         return html, text
@@ -429,8 +416,8 @@ def trigger_scan(request: ScanRequest, background_tasks: BackgroundTasks):
         comp_info = COMPETITORS[comp_id]
         
         try:
-            # Fetch current page
-            html, text = get_page_content(comp_info["url"])
+            # Fetch current page (uses Playwright for sites that require it)
+            html, text = get_page_content(comp_info["url"], competitor_id=comp_id)
             content_hash = compute_hash(text)
             structured_data = extract_structured_data(html, comp_info["selectors"])
             
