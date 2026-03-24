@@ -1,0 +1,38 @@
+name: Daily Competitive Scan
+
+on:
+  schedule:
+    # Runs at 7 AM PT (14:00 UTC) Monday-Friday
+    - cron: '0 14 * * 1-5'
+  workflow_dispatch:  # Allow manual trigger from GitHub UI
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger competitive intelligence scan
+        run: |
+          echo "Triggering scan at $(date)"
+          
+          response=$(curl -s -X POST \
+            https://curtburk-competitive-intel-monitor.hf.space/api/scan \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          
+          echo "Response: $response"
+          
+          # Check if any errors occurred
+          if echo "$response" | grep -q '"status":"error"'; then
+            echo "⚠️ Some scans failed"
+            exit 1
+          else
+            echo "✅ All scans completed successfully"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Scan Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Triggered at: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check results: https://curtburk-competitive-intel-monitor.hf.space/api/changes" >> $GITHUB_STEP_SUMMARY
