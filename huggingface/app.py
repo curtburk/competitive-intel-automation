@@ -131,11 +131,14 @@ class CompetitorStatus(BaseModel):
 
 def get_page_content(url: str, competitor_id: str = None) -> tuple[str, str]:
     """Fetch page content and return (html, text)."""
+    # NOTE: Explicitly NOT requesting Brotli (br) encoding because requests 
+    # doesn't decompress it automatically, leading to garbled binary output.
+    # Only request gzip and deflate which requests handles natively.
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Encoding": "gzip, deflate",  # No 'br' - requests doesn't handle Brotli
         "DNT": "1",
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
@@ -144,7 +147,7 @@ def get_page_content(url: str, competitor_id: str = None) -> tuple[str, str]:
         "Sec-Fetch-Site": "none",
         "Sec-Fetch-User": "?1",
         "Cache-Control": "max-age=0",
-        "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+        "sec-ch-ua": '"Chromium";v="134", "Not(A:Brand";v="24", "Google Chrome";v="134"',
         "sec-ch-ua-mobile": "?0",
         "sec-ch-ua-platform": '"Windows"',
     }
@@ -152,7 +155,22 @@ def get_page_content(url: str, competitor_id: str = None) -> tuple[str, str]:
     try:
         response = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
         response.raise_for_status()
+        
+        # Force encoding detection if not set properly
+        if response.encoding is None or response.encoding == 'ISO-8859-1':
+            response.encoding = response.apparent_encoding or 'utf-8'
+        
         html = response.text
+        
+        # Check for binary/garbled content (common sign of encoding issues)
+        # If more than 5% of characters are replacement characters, something is wrong
+        replacement_ratio = html.count('\ufffd') / max(len(html), 1)
+        if replacement_ratio > 0.05:
+            # Try decoding as UTF-8 from raw bytes
+            try:
+                html = response.content.decode('utf-8', errors='ignore')
+            except:
+                pass
         
         soup = BeautifulSoup(html, "html.parser")
         
@@ -163,7 +181,17 @@ def get_page_content(url: str, competitor_id: str = None) -> tuple[str, str]:
         text = soup.get_text(separator="\n", strip=True)
         text = re.sub(r'\n\s*\n', '\n\n', text)
         
+        # Final sanity check: if text is mostly non-printable, flag it
+        printable_ratio = sum(c.isprintable() or c.isspace() for c in text) / max(len(text), 1)
+        if printable_ratio < 0.8:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Page content appears garbled (only {printable_ratio:.0%} printable). Site may require JavaScript rendering."
+            )
+        
         return html, text
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch {url}: {str(e)}")
 
